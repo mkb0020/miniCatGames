@@ -13,6 +13,7 @@
 
 <canvas id="gameCanvas"></canvas>
 
+<!-- Instructions -->
 <div style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); color: white; font-family: Arial, sans-serif; font-size: 14px; text-align: center; z-index: 150; text-shadow: 2px 2px 4px black; pointer-events: none;">
 </div>
 
@@ -318,16 +319,6 @@ function createSpritePlatform(x, y, width, height, moveRange, moveSpeed, isActiv
       spriteLayer.pos.y = y;
 
       collisionLayer.deltaX = deltaX;
-
-      if (collisionLayer.sync) {
-        const syncCenterX = collisionLayer.centerX + (VIRTUAL_W / 2);
-        collisionLayer.sync.centerX = syncCenterX;
-        collisionLayer.sync.pos.x = syncCenterX - width/2;
-        collisionLayer.sync.pos.y = y - height/2;
-        collisionLayer.sync.spriteLayer.pos.x = syncCenterX;
-        collisionLayer.sync.spriteLayer.pos.y = y;
-        collisionLayer.sync.deltaX = deltaX;  
-      }
     });
   } else {
     collisionLayer.onUpdate(() => {
@@ -412,9 +403,8 @@ function setupOneWayPlatforms(player) {
 // ======================================== SCENE ========================================
 scene("vertical-test", () => {
   const LEVEL_HEIGHT = 4000;
-  const HALF_W = VIRTUAL_W / 2;
 
-  // ======================================== PLATFORM DATA (SHARED) ========================================
+  // ======================================== PLATFORM DATA ========================================
   // SMALLER Y  = HIGHER UP
   // PLAYER STARTS AT Y=3900, VICTORY IS Y=100
   const PLATFORM_COUNT = 25;
@@ -423,19 +413,19 @@ scene("vertical-test", () => {
 
   for (let i = 1; i < PLATFORM_COUNT; i++) {
     platformData.push({
-      xStart: rand(50, HALF_W - 150),
+      xStart: rand(200, VIRTUAL_W - 200),
       y: LEVEL_HEIGHT - (i * SPACING),
       width: 180,
       height: 40,
-      moveRange: rand(60, 120),
+      moveRange: rand(150, 300), 
       moveSpeed: rand(40, 100)
     });
   }
 
-  // ======================================== LEFT SIDE (NORMAL CONTROLS) ========================================
-  const playerLeft = add([
+  // ======================================== PLAYER 1 (NORMAL CONTROLS) ========================================
+  const player1 = add([
     sprite("niels", { frame: 11 }),
-    pos(HALF_W / 2, LEVEL_HEIGHT - 100),
+    pos(VIRTUAL_W / 3, LEVEL_HEIGHT - 100),
     area({
       width: 90,
       height: 90,
@@ -450,15 +440,15 @@ scene("vertical-test", () => {
       isMoving: false,
       curState: "idle",
       ridingPlatform: null,
-      side: "left"
+      side: "normal"
     },
-    "playerLeft"
+    "player1"
   ]);
 
-  // ======================================== RIGHT SIDE (INVERTED CONTROLS) - PINK ENTANGLED TWIN ========================================
-  const playerRight = add([
+  // ======================================== PLAYER 2 (INVERTED CONTROLS) - PINK ENTANGLED TWIN ========================================
+  const player2 = add([
     sprite("niels", { frame: 11 }),
-    pos(HALF_W + (HALF_W / 2), LEVEL_HEIGHT - 100),
+    pos((VIRTUAL_W / 3) * 2, LEVEL_HEIGHT - 100),
     area({
       width: 90,
       height: 90,
@@ -474,18 +464,17 @@ scene("vertical-test", () => {
       isMoving: false,
       curState: "idle",
       ridingPlatform: null,
-      side: "right"
+      side: "inverted"
     },
-    "playerRight"
+    "player2"
   ]);
 
-  // ======================================== GROUND (BOTH SIDES) ========================================
-  createSpriteGround(0, LEVEL_HEIGHT - 40, HALF_W, 40);
-  createSpriteGround(HALF_W, LEVEL_HEIGHT - 40, HALF_W, 40);
+  // ======================================== GROUND ========================================
+  createSpriteGround(0, LEVEL_HEIGHT - 40, VIRTUAL_W, 40);
 
-  // ======================================== PLATFORMS (BOTH SIDES, SYNCHRONIZED) ========================================
+  // ======================================== PLATFORMS (SINGLE SET) ========================================
   platformData.forEach((data, index) => {
-    const leftPlat = createSpritePlatform(
+    createSpritePlatform(
       data.xStart,
       data.y,
       data.width,
@@ -494,24 +483,11 @@ scene("vertical-test", () => {
       data.moveSpeed,
       true
     );
-
-    const rightPlat = createSpritePlatform(
-      HALF_W + data.xStart,
-      data.y,
-      data.width,
-      data.height,
-      data.moveRange,
-      data.moveSpeed,
-      false 
-    );
-
-    leftPlat.sync = rightPlat;
-    rightPlat.sync = leftPlat;
   });
 
   // ======================================== ONE-WAY PLATFORM SETUP ========================================
-  setupOneWayPlatforms(playerLeft);
-  setupOneWayPlatforms(playerRight);
+  setupOneWayPlatforms(player1);
+  setupOneWayPlatforms(player2);
 
   // ======================================== WALLS ========================================
   const WALL_SEGMENT_HEIGHT = 250 * 2;
@@ -522,7 +498,7 @@ scene("vertical-test", () => {
     const yPos = LEVEL_HEIGHT - (index * WALL_SEGMENT_HEIGHT);
 
    
-    const leftWallLeft = add([
+    const leftWall = add([
       sprite("leftWall"),
       pos(0, yPos),
       scale(vec2(0.7, 2)), 
@@ -532,29 +508,8 @@ scene("vertical-test", () => {
       "wallSegment"
     ]);
 
-    const leftWallRight = add([
-      sprite("rightWall"),
-      pos(HALF_W, yPos),
-      scale(vec2(0.7, 2)), 
-      area(),
-      body({ isStatic: true }),
-      anchor("topright"),
-      z(1), 
-      "wallSegment"
-    ]);
 
-   
-    const rightWallLeft = add([
-      sprite("leftWall"),
-      pos(HALF_W, yPos),
-      scale(vec2(0.7, 2)),  
-      area(),
-      body({ isStatic: true }),
-      z(1), 
-      "wallSegment"
-    ]);
-
-    const rightWallRight = add([
+    const rightWall = add([
       sprite("rightWall"),
       pos(VIRTUAL_W, yPos),
       scale(vec2(0.7, 2)), 
@@ -565,7 +520,7 @@ scene("vertical-test", () => {
       "wallSegment"
     ]);
 
-    activeWallSegments.set(index, [leftWallLeft, leftWallRight, rightWallLeft, rightWallRight]);
+    activeWallSegments.set(index, [leftWall, rightWall]);
   }
 
   function removeWallSegment(index) {
@@ -574,15 +529,6 @@ scene("vertical-test", () => {
     segment.forEach(obj => destroy(obj));
     activeWallSegments.delete(index);
   }
-
-  // ======================================== CENTER DIVIDER ========================================
-  add([
-    rect(2, LEVEL_HEIGHT * 2),
-    pos(HALF_W - 1, 0),
-    color(0,0,0),
-    z(2),
-    "divider"
-  ]);
 
   // ======================================== CONTROLS ========================================
   function handlePlayer(player, invertControls) {
@@ -609,7 +555,7 @@ scene("vertical-test", () => {
 
       if (player.pos.y > LEVEL_HEIGHT + 300) {
         player.pos = vec2(
-          player.side === "left" ? HALF_W / 2 : HALF_W + (HALF_W / 2),
+          player.side === "normal" ? VIRTUAL_W / 3 : (VIRTUAL_W / 3) * 2,
           LEVEL_HEIGHT - 200
         );
         player.ridingPlatform = null;
@@ -619,29 +565,29 @@ scene("vertical-test", () => {
     });
   }
 
-  handlePlayer(playerLeft, false);  
-  handlePlayer(playerRight, true);  
+  handlePlayer(player1, false);  
+  handlePlayer(player2, true);    
 
   // ======================================== JUMP ========================================
   onKeyPress("space", () => {
-    if (playerLeft.isGrounded() || playerLeft.ridingPlatform) {
-      playerLeft.jump(JUMP_FORCE);
-      playerLeft.curState = "jumpStart";
-      playerLeft.use(sprite("niels", { frame: 8 }));
-      playerLeft.ridingPlatform = null; 
+    if (player1.isGrounded() || player1.ridingPlatform) {
+      player1.jump(JUMP_FORCE);
+      player1.curState = "jumpStart";
+      player1.use(sprite("niels", { frame: 8 }));
+      player1.ridingPlatform = null; 
     }
-    if (playerRight.isGrounded() || playerRight.ridingPlatform) {
-      playerRight.jump(JUMP_FORCE);
-      playerRight.curState = "jumpStart";
-      playerRight.use(sprite("niels", { frame: 8 }));
-      playerRight.use(color(rgb(255,61,170))); // REAPPLY TINT
-      playerRight.ridingPlatform = null;
+    if (player2.isGrounded() || player2.ridingPlatform) {
+      player2.jump(JUMP_FORCE);
+      player2.curState = "jumpStart";
+      player2.use(sprite("niels", { frame: 8 }));
+      player2.use(color(rgb(255,61,170))); // REAPPLY TINT
+      player2.ridingPlatform = null;
     }
   });
 
   // ======================================== CAMERA ========================================
   onUpdate(() => {
-    const avgY = (playerLeft.pos.y + playerRight.pos.y) / 2;
+    const avgY = (player1.pos.y + player2.pos.y) / 2;
     const camY = Math.max(avgY + 50, VIRTUAL_H / 2);
     setCamPos(VIRTUAL_W / 2, camY);
 
@@ -701,7 +647,7 @@ scene("vertical-test", () => {
         player.stop();
       }
 
-      if (player.side === "right") {
+      if (player.side === "inverted") {
         player.use(color(rgb(255,61,170)));
       }
     }
@@ -714,7 +660,7 @@ scene("vertical-test", () => {
   let victoryShown = false;
   
   add([
-    rect(HALF_W, 20),
+    rect(VIRTUAL_W, 20),
     pos(0, goalY - 10),
     color(rgb(100, 255, 100)),
     opacity(0.3),
@@ -723,32 +669,15 @@ scene("vertical-test", () => {
   ]);
   
   add([
-    rect(HALF_W, 20),
-    pos(HALF_W, goalY - 10),
-    color(rgb(100, 255, 100)),
-    opacity(0.3),
-    z(1),
-    "goal"
-  ]);
-  
-  add([
-    text("GOAL", { size: 24 }),
-    pos(HALF_W / 2, goalY),
-    anchor("center"),
-    color(255, 255, 255),
-    z(2)
-  ]);
-  
-  add([
-    text("GOAL", { size: 24 }),
-    pos(HALF_W + HALF_W / 2, goalY),
+    text("GOAL", { size: 32 }),
+    pos(VIRTUAL_W / 2, goalY),
     anchor("center"),
     color(255, 255, 255),
     z(2)
   ]);
   
   onUpdate(() => {
-    if (!victoryShown && playerLeft.pos.y < goalY && playerRight.pos.y < goalY) {
+    if (!victoryShown && player1.pos.y < goalY && player2.pos.y < goalY) {
       victoryShown = true;
       add([
         text("🎉 ENTANGLEMENT COMPLETE! 🎉", { size: 32 }),
