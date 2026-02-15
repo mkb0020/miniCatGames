@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Quantum Cat Mini-Games</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="dreamy-overlay"></div>
+  <div class="background-gradient"></div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="controls">
+    <div class="joystick">
+      <div class="joystick-knob"></div>
+    </div>
+    <div class="jump-btn">
+      <img src="assets/images/jump.png" alt="Jump">
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/kaplay@latest/dist/kaplay.js"></script>
+
+  <script type="module" src="modules/main.js"></script>
+</body>
+</html>
