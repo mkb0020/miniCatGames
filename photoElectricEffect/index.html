@@ -1,0 +1,512 @@
+<!-- PHOTOELECTRIC MINI GAME PROTOTYPE -->
+<!DOCTYPE html> 
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>PHOTOELECTRIC MINI GAME PROTOTYPE</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dreamy-overlay"></div>
+<div class="background-gradient"></div>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- MOBILE CONTROLS -->
+<div id="controls">
+  <div class="joystick">
+    <div class="joystick-knob"></div>
+  </div>
+  <div class="jump-btn"><img src="assets/images/jump.png"></div>
+</div>
+
+<script src="https://unpkg.com/kaplay@latest/dist/kaplay.js"></script>
+
+<script>
+// ======================================== SETUP ========================================
+const VIRTUAL_W = 1000;
+const VIRTUAL_H = 480;
+const GAME_SCALE = 2;
+
+const k = kaplay({
+  width: (VIRTUAL_W / 2) * GAME_SCALE,
+  height: (VIRTUAL_H / 2) * GAME_SCALE,
+  GAME_SCALE,
+  letterbox: true,
+  background: [11, 11, 27, 0],
+  global: false,
+  canvas: document.getElementById("gameCanvas"),
+  debug: true,
+  stretch: true,
+  crisp: true,
+});
+
+window.k = k;
+Object.assign(window, k);
+
+// ======================================== MOBILE CONTROLS ========================================
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                  ('ontouchstart' in window);
+const controls = document.getElementById('controls');
+const joystick = document.querySelector('.joystick');
+const joystickKnob = document.querySelector('.joystick-knob');
+const jumpBtn = document.querySelector('.jump-btn');
+
+const virtualKeys = {
+  left: false,
+  right: false,
+  space: false
+};
+
+if (controls) {
+  const updateOrientation = () => {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    controls.className = isPortrait ? 'portrait' : 'landscape';
+    
+    if (isMobile) {
+      controls.style.display = 'flex';
+    }
+  };
+  
+  updateOrientation();
+  window.addEventListener('resize', updateOrientation);
+  window.addEventListener('orientationchange', updateOrientation);
+  
+  let hasShown = false;
+  window.addEventListener('touchstart', () => {
+    if (!hasShown) {
+      hasShown = true;
+      controls.style.display = 'flex';
+      updateOrientation();
+    }
+  }, { once: true });
+}
+
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+const joystickRadius = 60;
+const deadZone = 15;
+
+function updateJoystick(touch) {
+  if (!joystickActive) return;
+  
+  const rect = joystick.getBoundingClientRect();
+  joystickCenter.x = rect.left + rect.width / 2;
+  joystickCenter.y = rect.top + rect.height / 2;
+  
+  const deltaX = touch.clientX - joystickCenter.x;
+  const deltaY = touch.clientY - joystickCenter.y;
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  
+  const clampedDistance = Math.min(distance, joystickRadius);
+  const angle = Math.atan2(deltaY, deltaX);
+  
+  const knobX = Math.cos(angle) * clampedDistance;
+  const knobY = Math.sin(angle) * clampedDistance;
+  
+  joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+  
+  if (Math.abs(deltaX) > deadZone) {
+    virtualKeys.left = deltaX < 0;
+    virtualKeys.right = deltaX > 0;
+  } else {
+    virtualKeys.left = false;
+    virtualKeys.right = false;
+  }
+}
+
+function resetJoystick() {
+  joystickActive = false;
+  joystick.classList.remove('active');
+  joystickKnob.style.transform = 'translate(-50%, -50%)';
+  virtualKeys.left = false;
+  virtualKeys.right = false;
+}
+
+if (joystick) {
+  joystick.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    joystickActive = true;
+    joystick.classList.add('active');
+    updateJoystick(e.touches[0]);
+  });
+  
+  joystick.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    updateJoystick(e.touches[0]);
+  });
+  
+  joystick.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    resetJoystick();
+  });
+  
+  joystick.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    resetJoystick();
+  });
+}
+
+if (jumpBtn) {
+  jumpBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    virtualKeys.space = true;
+  });
+  
+  jumpBtn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    virtualKeys.space = false;
+  });
+  
+  jumpBtn.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    virtualKeys.space = false;
+  });
+}
+
+const originalIsKeyDown = isKeyDown;
+const originalOnKeyPress = onKeyPress;  
+let lastSpaceState = false;
+let spaceHandlers = [];
+
+window.isKeyDown = function(key) {
+  if (virtualKeys[key]) return true;
+  return originalIsKeyDown(key);
+};
+
+window.onKeyPress = function(key, callback) {
+  if (key === "space") {
+    spaceHandlers.push(callback);
+  }
+  return originalOnKeyPress(key, callback);  
+};
+
+let checkMobileInput = () => {
+  if (virtualKeys.space && !lastSpaceState) {
+    spaceHandlers.forEach(handler => handler());
+  }
+  lastSpaceState = virtualKeys.space;
+};
+
+setInterval(checkMobileInput, 16);
+
+window.addEventListener('keydown', (e) => { // HIDE MOBILE CONTROLS BY PRESSING M
+  if (e.key === 'm' || e.key === 'M') {
+    if (controls.style.display === 'flex') {
+      controls.style.display = 'none';
+    } else {
+      controls.style.display = 'flex';
+      const isPortrait = window.innerHeight > window.innerWidth;
+      controls.className = isPortrait ? 'portrait' : 'landscape';
+    }
+  }
+});
+
+// ======================================== PHYSICS ========================================
+setGravity(1500);
+const SPEED = 550;    // INCREASED FOR THIS MINI GAME  
+const JUMP_FORCE = 900; // INCREASED FOR THIS MINI GAME
+
+// ======================================== LOAD SPRITES ========================================
+loadSprite("niels", "assets/images/Niels.png", { 
+  sliceX: 12,
+  sliceY: 1,
+  anims: {
+    walk: {
+      from: 0,
+      to: 7,
+      speed: 12,
+      loop: true,
+    },
+  },
+});
+loadSprite("groundPlatform", "assets/images/ground3.png");
+loadSprite("leftWall", "assets/images/leftWall2.png");
+loadSprite("rightWall", "assets/images/rightWall2.png");
+loadSprite("photon", "assets/images/photonAnimation.png", { sliceX:4, sliceY:1, anims:{blink:{from:0,to:3, loop: true, speed:30}} });
+
+// ======================================== MAIN SCENE ========================================
+scene("photoelectric-test", () => {
+  const gameLength = 1500;
+  const gameHeight = VIRTUAL_H - 90;
+  const groundSegmentWidth = 250; 
+  const numGroundSegments = gameLength / groundSegmentWidth - 1;
+  // ======================================== GROUND (BOTTOM) ========================================
+  const groundY = VIRTUAL_H - 5;
+  for (let i = 0; i < numGroundSegments; i++) {  // VISUAL GROUND
+    add([
+      sprite("groundPlatform"),
+      pos(i * groundSegmentWidth, groundY),
+      scale(vec2(2, 1)),
+      z(2),
+    ]);
+  }
+  
+  add([ // COLLISION GROUND
+    rect(gameLength, 80),
+    pos(0, groundY),
+    area(),
+    body({ isStatic: true }),
+    opacity(0),
+    "ground",
+    z(4)
+  ]);
+
+  // ======================================== CEILING (TOP - UPSIDE DOWN) ========================================
+  const ceilingY = 90;
+  for (let i = 0; i < numGroundSegments; i++) { // VISUAL CEILING 
+    add([
+      sprite("groundPlatform"),
+      pos(i * 250, ceilingY),
+      scale(vec2(2, -1)), 
+      z(2),
+    ]);
+  }
+  
+  add([ // COLLISION CEILING
+    rect(gameLength, -100),
+    pos(0, 0),
+    area(),
+    body({ isStatic: true }),
+    opacity(0),
+    "ceiling",
+    z(4)
+  ]);
+
+  // ======================================== LEFT WALL ========================================
+  for (let i = 0; i < 3; i++) {
+    add([
+      sprite("leftWall"),
+      pos(0, i * 250),
+      scale(vec2(1, 1)),
+      z(3),
+    ]);
+  }
+  
+  add([
+    rect(50, VIRTUAL_H),
+    pos(0, 0),
+    area(),
+    body({ isStatic: true }),
+    opacity(0),
+    "wall",
+    z(4)
+  ]);
+
+  // ======================================== RIGHT WALL ========================================
+  for (let i = 0; i < 3; i++) {
+    add([
+      sprite("rightWall"),
+      pos(gameLength+30, i * 250),
+      scale(vec2(1, 1)),
+      anchor("topright"),
+      z(4),
+    ]);
+  }
+  
+  add([
+    rect(50, VIRTUAL_H),
+    pos(gameLength, 0),
+    area(),
+    body({ isStatic: true }),
+    opacity(0),
+    "wall",
+    z(3)
+  ]);
+
+  // ======================================== PLAYER  ========================================
+  const hitboxWidth = 90;
+  const hitboxHeight = 90;
+  const offsetX = 5;
+  const offsetY = 0;
+  const player = add([
+    sprite("niels", { frame: 11 }),
+    pos(VIRTUAL_W / 2, groundY - 100),
+    area({
+      width: hitboxWidth,
+      height: hitboxHeight,
+      offset: vec2(offsetX, offsetY)
+    }),
+    body(),
+    scale(1),
+    anchor("center"),
+    z(10),
+    {
+      speed: SPEED,
+      playerJumpForce: JUMP_FORCE,
+      maxFallSpeed: 1000,
+      airControl:  1, // PLACEHOLDER
+      groundControl: 1.0, // PLACEHOLDER
+      isMoving: false,
+      facingRight: true,
+      curState: 'idle'
+    },
+    "player"
+  ]);
+
+let isCollidingWithWall = false;
+player.onCollide("wall", () => {
+  isCollidingWithWall = true;
+  player.vel.x *= 0.3; 
+});
+player.onCollideEnd("wall", () => {
+  isCollidingWithWall = false;
+});
+
+  // ========================================  CONTROLS  ========================================
+player.onUpdate(() => {
+  // ===== HORIZONTAL MOVEMENT =====
+  let moveDir = 0;
+  if (isKeyDown("left")) moveDir -= 1;
+  if (isKeyDown("right")) moveDir += 1;
+  const control = player.isGrounded() ? player.groundControl : player.airControl;
+  player.move(moveDir * player.speed * control, 0);
+  player.isMoving = moveDir !== 0;
+  // ===== SPRITE FLIP =====
+  if (moveDir !== 0) {
+    player.facingRight = moveDir > 0;
+    player.flipX = !player.facingRight;
+  }
+  // ===== JUMP =====
+  if ((isKeyPressed("space") || virtualKeys.space) && player.isGrounded()) {
+    player.jump(player.playerJumpForce);
+  }
+
+  // ======================================== ANIMATIONS ========================================
+  if (!player.isGrounded()) {
+    if (player.vel.y < -700) {
+      player.frame = 8;
+    } else if (player.vel.y < 20) {
+      player.frame = 9;
+    } else {
+      player.frame = 10;
+    }
+    player.curState = "jump";
+  } else {
+    if (player.isMoving) {
+      if (player.curState !== "walk") {
+        player.play("walk");
+        player.curState = "walk";
+      }
+    } else {
+      player.stop();
+      player.frame = 11;
+      player.curState = "idle";
+    }
+
+  }
+});
+
+// ======================================== PHOTON SYSTEM ========================================
+let photonsCollected = 0;
+let gameTime = 30;
+let gameActive = true;
+// ===== UI TEXT =====
+const timerText = add([
+  text("Time: 30", { size: 32 }),
+  pos(40, 40),
+  fixed(),
+  z(100),
+]);
+
+const photonText = add([
+  text("Photons: 0", { size: 32 }),
+  pos(40, 80),
+  fixed(),
+  z(100),
+]);
+
+// ===== TIMER =====
+loop(1, () => {
+  if (!gameActive) return;
+
+  gameTime--;
+  timerText.text = "Time: " + gameTime;
+
+  if (gameTime <= 0) {
+    endGame();
+  }
+});
+
+// ======================================== PHOTON SPAWNING ========================================
+function spawnPhoton() {
+  if (!gameActive) return;
+  const x = rand(120, gameLength - 20);
+  const y = rand(120, gameHeight - 100);
+  const photon = add([
+    sprite("photon"),
+    pos(x, y),
+    area(),
+    scale(1.5),
+    anchor("center"),
+    opacity(0.9),
+    z(5),
+    "photon"
+  ]);
+
+  photon.onUpdate(() => { // FLICKER
+    photon.opacity = rand(0.5, 1);
+  });
+
+  wait(rand(0.8, 1.8), () => {
+    if (photon.exists()) destroy(photon);
+  });
+}
+
+loop(0.4, () => {
+  if (gameActive) {
+    spawnPhoton();
+  }
+});
+// COLLECTION
+player.onCollide("photon", (p) => {
+  if (!gameActive) return;
+
+  photonsCollected++;
+  photonText.text = "Photons: " + photonsCollected;
+
+  destroy(p);
+});
+
+// END GAME
+function endGame() {
+  gameActive = false;
+  add([
+    rect(width(), height()),
+    color(0,0,0),
+    opacity(0.6),
+    fixed(),
+    z(200)
+  ]);
+
+  add([
+    text("Time's Up!", { size: 64 }),
+    pos(width()/2, height()/2 - 40),
+    anchor("center"),
+    fixed(),
+    z(201)
+  ]);
+
+  add([
+    text("Photons Collected: " + photonsCollected, { size: 36 }),
+    pos(width()/2, height()/2 + 20),
+    anchor("center"),
+    fixed(),
+    z(201)
+  ]);
+}
+
+  // ======================================== CAMERA ========================================
+  player.onUpdate(() => {
+    setCamPos(player.pos.x, VIRTUAL_H / 2 + 40);
+  });
+
+});
+
+go("photoelectric-test");
+
+</script>
+
+</body>
+</html>

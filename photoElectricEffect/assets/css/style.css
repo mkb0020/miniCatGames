@@ -1,0 +1,189 @@
+    body {
+      margin: 0;
+      background: black;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+
+.background-gradient {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #000000 25%, #37025A 55%, #8a2be2 70%, #c71585 80%, #c71585 97%, #c71585 100%);
+  opacity: 1;
+  z-index: -2;
+}
+
+    .dreamy-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.1);
+      backdrop-filter: blur(30px);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+#gameCanvas {
+  position: absolute !important;  
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;  
+  height: 100% !important;  
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block;
+  z-index: 10;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: rgba(0,0,0,0.1);
+}
+
+/* ========================= MOBILE CONTROLS ========================= */
+#controls {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  z-index: 200;
+}
+
+.joystick {
+  position: absolute;
+  bottom: 20px;
+  left: 30px;
+  width: 110px;
+  height: 110px;
+  background-image: radial-gradient(rgba(0, 40, 40, 0.9), rgba(0, 70, 70, 0.8),  rgba(0, 80, 80, 0.7), rgba(0, 90, 90, 0.6), rgba(0, 135, 135, 0.5), rgba(0, 150, 150, 0.4), rgba(0, 140, 140, 0.4), rgba(0, 130, 130, 0.4), rgba(0, 120, 120, 0.4));
+  border: 2px solid  #00FFFF;
+  border-radius: 50%;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: background 0.2s;
+  box-shadow: 0 0 10px rgba(0, 76, 76,0.9);
+}
+
+.joystick.active {
+  background: rgba(0, 255, 255, 0.5);
+}
+
+.joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  background-image: radial-gradient(rgba(0, 124, 124, 0.7), rgba(0, 190, 190, 0.7), rgba(0, 124, 124, 0.7), rgba(0,190,190, 0.7), rgba(0, 124, 124, 0.7), rgba(0,190,190, 0.7), rgba(0, 124, 124, 0.7), rgba(0,190,190, 0.7), rgba(0, 124, 124, 0.7), rgba(0,190,190, 0.8), rgba(0, 124, 124, 0.9));
+  border: 3px solid #02ffff;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 15px rgba(0, 150, 150, 0.5);
+}
+
+.jump-btn {
+   position: absolute;
+  bottom: 25px;
+  right: 35px;
+  font-size: 3rem;
+  color: #00FFFF;
+  background: rgba(0, 89, 89, 0.4);
+  border: 3px solid #00FFFF;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-shadow: 
+    1px -1px 0 #003d3d,
+    -1px -1px 0 #003d3d,
+    -1px 1px 0 #003d3d, 
+    1px 1px 0 #003d3d;
+  transition: background 0.2s;
+  z-index: 1000 !important;
+}
+
+.jump-btn:active {
+  background: rgba(0, 255, 255, 0.9);
+}
+
+.jump-btn img {
+  width: 60px;
+}
+
+/* Landscape layout */
+#controls.landscape {
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 20px 20px;
+}
+
+#controls.landscape .joystick {
+  position: relative;
+  margin-bottom: 0;
+}
+
+#controls.landscape .jump-btn {
+  position: relative;
+  margin-bottom: 0;
+}
+
+/* Portrait layout */
+#controls.portrait {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 35vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(50, 50, 70, 0.9) 0%, rgba(30, 30, 50, 0.95) 100%);
+  border-top: 4px solid #9090C0;
+}
+
+#controls.portrait .joystick {
+  position: absolute;
+  left: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#controls.portrait .jump-btn {
+  position: absolute;
+  right: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Responsive sizes */
+@media (max-width: 700px) {
+  .joystick {
+    width: 100px;
+    height: 100px;
+  }
+
+  .joystick-knob {
+    width: 40px;
+    height: 40px;
+  }
+
+  .jump-btn {
+    width: 100px;
+    height: 100px;
+    font-size: 2.3rem;
+  }
+}
+
